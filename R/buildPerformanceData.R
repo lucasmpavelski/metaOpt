@@ -1,9 +1,9 @@
 require('irace')
 require('tidyverse')
 
-buildPerformanceData <- function(scenario, parameters, results) {
+buildPerformanceData <- function(scenario, parameters) {
   instances <- scenario$instances
-  results <- map(instances, parameters, function(instance, parameters) {
+  results <- map(instances, function(instance) {
     inst_scenario <- scenario
     inst_scenario$instances <- instance
     irace(inst_scenario, parameters)

@@ -497,6 +497,11 @@ Hash: b7be987240f4c43cd1995e7d5039d261
 Requires: R6, Rcpp, brew, commonmark, desc, digest, knitr, pkgload,
     purrr, rlang, stringi, stringr, xml2
 
+Package: rpart
+Source: CRAN
+Version: 4.1-15
+Hash: d3f35b9f17b8c0253558ac16fd80dab7
+
 Package: rprojroot
 Source: CRAN
 Version: 1.3-2
