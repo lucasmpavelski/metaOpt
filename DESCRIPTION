@@ -1,6 +1,6 @@
 Package: metaOpt
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Meta-Learning for Optimization
 Version: 0.1.0
 Author: Lucas Marcondes Pavelski
 Maintainer: Lucas Marcondes Pavelski <lpavelski@alunos.utfpr.edu.br>
@@ -8,5 +8,10 @@ Description: Main steps for using meta-learning on optimization problems.
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
+Imports:
+    irace,
+    dplyr,
+    tidyr,
+    purrr
 Suggests: 
     testthat

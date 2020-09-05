@@ -1,43 +1,49 @@
-
-
 require('rpart')
 require('tidyverse')
 
 
-
 test_that("build performance data works", {
-  easy_dataset <- tibble(Input = 1:50, Output = Input < 25)
-  scenario <- irace::defaultScenario(list(
-    targetRunner = function(experiment, scenario) {
-      set.seed(experiment$seed)
-      control <- rpart.control(maxdepth = experiment$configuration$maxdepth)
-      perf <- 0
-      if (experiment$instance == 'hard') {
-        model <- rpart(formula=Species ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width,
-                       data=iris,
-                       control=control)
-        perf <- sum(predict(model, iris, "class") == iris$Species) / nrow(iris)
-      } else if (experiment$instance == 'easy') {
-        model <- rpart(formula=Output ~ Input,
-                       data=easy_dataset,
-                       control=control)
-        perf <- sum(predict(model, easy_dataset) == easy_dataset$Output) / nrow(easy_dataset)
-      }
-      list(
-        cost = -perf + experiment$configuration$maxdepth / 30
+  algorithmSpace <- AlgorithmSpace(
+    algorithms = list(
+      Algorithm(
+        name = "good for inst1",
+        parameters = irace::readParameters(text = 'betterIfA "" c (A,B)'),
+        solve = function(experiment, scenario) {
+          list(
+            cost = (2 - (experiment$instance == 'inst1') - (experiment$configuration$betterIfA == 'A'))
+          )
+        }
+      ),
+      Algorithm(
+        name = "good for inst2",
+        parameters = irace::readParameters(text = 'betterIfD "" c (C,D)'),
+        solve = function(experiment, scenario) {
+          list(
+            cost = (2 - (experiment$instance == 'inst2') - (experiment$configuration$betterIfD == 'D'))
+          )
+        }
       )
-    },
-    maxExperiments = 500,
-    instances = list('hard', 'easy')
-  ))
-  parameters_table <- '
-   # name       switch           type values               [conditions (using R syntax)]
-   maxdepth   "--"             i    (1,30)
-   '
-  parameters <- readParameters(text=parameters_table)
-  results <- buildPerformanceData(scenario, parameters)
-
-  expect_equal(2, length(results))
-  expect_equal(1, results[[2]]$maxdepth[1])
-  expect_true(results[[1]]$maxdepth[1] >= results[[2]]$maxdepth[1])
+    )
+  )
+  problemSpace <- ProblemSpace(
+    instances = list("inst1", "inst2")
+  )
+  results <- buildPerformanceData(
+    problemSpace,
+    algorithmSpace,
+    irace::defaultScenario(list(maxExperiments = 100))
+  )
+  expect_equal(4, nrow(results))
+  expect_equal(2, dplyr::n_distinct(results$instances))
+  expect_equal(2, dplyr::n_distinct(results$algorithms %>% purrr::map(~.x@name)))
+  betterAParams <- results %>%
+    unnest(results) %>%
+    filter(algorithm_names == 'good for inst1') %>%
+    pull(betterIfA)
+  expect_true(all(betterAParams == 'A'))
+  betterDParams <- results %>%
+    unnest(results) %>%
+    filter(algorithm_names == 'good for inst2') %>%
+    pull(betterIfD)
+  expect_true(all(betterDParams == 'D'))
 })

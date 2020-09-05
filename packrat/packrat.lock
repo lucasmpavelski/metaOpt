@@ -194,6 +194,11 @@ Version: 0.5.0
 Hash: 6b130778caccc8e4e6cf498c76c84e7b
 Requires: ellipsis, magrittr, rlang, tibble
 
+Package: formatR
+Source: CRAN
+Version: 1.7
+Hash: 60dec134ecd2fd23c658b8057c76317a
+
 Package: fs
 Source: CRAN
 Version: 1.5.0
