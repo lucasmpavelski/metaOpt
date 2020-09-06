@@ -10,18 +10,15 @@
 #'
 #' @examples
 buildPerformanceData <- function(problemSpace, algorithmSpace, iraceScenario = irace::defaultScenario()) {
-    experiments <- expand.grid(instance = problemSpace@instances, algorithm = algorithmSpace@algorithms)
-    results <- purrr::pmap_dfr(experiments, function(instance, algorithm) {
+    experiments <- expand.grid(problem = problemSpace@problems, algorithm = algorithmSpace@algorithms)
+    results <- pmap_dfr(experiments, function(problem, algorithm) {
         inst_scenario <- iraceScenario
-        inst_scenario$instances <- instance
+        inst_scenario$instances <- problem@name
+        inst_scenario$targetRunnerData <- problem
         inst_scenario$targetRunner <- algorithm@solve
         parameters <- algorithm@parameters
         tunning_result <- irace::irace(inst_scenario, parameters)
-        dplyr::tibble(
-          algorithm_names = algorithm@name,
-          algorithms = list(algorithm),
-          instances = instance,
-          results = list(tunning_result)
-        )
+        tibble(algorithm_names = algorithm@name, algorithms = list(algorithm), problems = list(problem),
+            problem_names = problem@name, results = list(tunning_result))
     })
 }
