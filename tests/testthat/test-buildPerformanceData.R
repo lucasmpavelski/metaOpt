@@ -3,21 +3,11 @@ algorithmSpace <- AlgorithmSpace(
   algorithms = list(
     Algorithm(
       name = "good for inst1",
-      parameters = irace::readParameters(text = 'betterIfA "" c (A,B)'),
-      solve = function(experiment, scenario) {
-        list(
-          cost = (2 - (experiment$instance == 'inst1') - (experiment$configuration$betterIfA == 'A'))
-        )
-      }
+      parameters = irace::readParameters(text = 'betterIfA "" c (A,B)')
     ),
     Algorithm(
       name = "good for inst2",
-      parameters = irace::readParameters(text = 'betterIfD "" c (C,D)'),
-      solve = function(experiment, scenario) {
-        list(
-          cost = (2 - (experiment$instance == 'inst2') - (experiment$configuration$betterIfD == 'D'))
-        )
-      }
+      parameters = irace::readParameters(text = 'betterIfD "" c (C,D)')
     )
   )
 )
@@ -33,47 +23,53 @@ problemSpace <- ProblemSpace(
   )
 )
 
+solve_function <- function(algorithm, config, problem, seed) {
+  list (
+    cost = 4
+        - (algorithm@name == "good for inst1" && problem@name == "inst1")
+        - (algorithm@name == "good for inst2" && problem@name == "inst2")
+        - (algorithm@name == "good for inst1" && config$betterIfA == "A")
+        - (algorithm@name == "good for inst2" && config$betterIfD == "D")
+  )
+}
 
-test_that("problem data is available", {
-  is_first_call <- TRUE
-  prob_data <- list(test = "important problem data")
-  problemSpace@problems[[1]]@data = prob_data
-  solve_func <- algorithmSpace@algorithms[[1]]@solve
-  algorithmSpace@algorithms[[1]]@solve <- function(experiment, scenario) {
-    if (is_first_call) {
-      if (experiment$instance == 'inst1') {
-        expect_equal(scenario$targetRunnerData, problemSpace@problems[[1]])
-      } else if (experiment$instance == 'inst2') {
-        expect_equal(scenario$targetRunnerData, problemSpace@problems[[2]])
-      }
-      is_first_call <<- FALSE
-    }
-    solve_func(experiment, scenario)
-  }
-  results <- buildPerformanceData(
+scenario <- irace::defaultScenario(list(maxExperiments = 100))
+
+test_that("problem and algorithm are passed to solver function", {
+  test_once <- TRUE
+  results <- build_performance_data(
     problemSpace,
     algorithmSpace,
-    irace::defaultScenario(list(maxExperiments = 100))
+    function(algorithm, config, problem, seed) {
+      if (test_once) {
+        expect_true(some(algorithmSpace@algorithms, ~.x@name == algorithm@name))
+        expect_true(some(problemSpace@problems, ~.x@name == problem@name))
+        test_once <<- FALSE
+      }
+      list(cost = 1)
+    },
+    irace_scenario = scenario
   )
 })
 
 test_that("parameters are tunned for each problem/algorithm combination", {
-  results <- buildPerformanceData(
+  results <- build_performance_data(
     problemSpace,
     algorithmSpace,
-    irace::defaultScenario(list(maxExperiments = 100))
+    solve_function,
+    irace_scenario = scenario
   )
   expect_equal(4, nrow(results))
   expect_equal(2, dplyr::n_distinct(results$problem_names))
   expect_equal(2, dplyr::n_distinct(results$algorithm_names))
   betterAParams <- results %>%
     unnest(results) %>%
-    filter(algorithm_names == 'good for inst1') %>%
+    filter(algorithm_names == "good for inst1") %>%
     pull(betterIfA)
-  expect_true(all(betterAParams == 'A'))
+  expect_true(all(betterAParams == "A"))
   betterDParams <- results %>%
     unnest(results) %>%
-    filter(algorithm_names == 'good for inst2') %>%
+    filter(algorithm_names == "good for inst2") %>%
     pull(betterIfD)
-  expect_true(all(betterDParams == 'D'))
+  expect_true(all(betterDParams == "D"))
 })
