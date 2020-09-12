@@ -23,17 +23,21 @@ problemSpace <- ProblemSpace(
   )
 )
 
-solve_function <- function(algorithm, config, problem, seed) {
+solve_function <- function(algorithm, config, problem, seed, ...) {
   list (
     cost = 4
         - (algorithm@name == "good for inst1" && problem@name == "inst1")
         - (algorithm@name == "good for inst2" && problem@name == "inst2")
         - (algorithm@name == "good for inst1" && config$betterIfA == "A")
-        - (algorithm@name == "good for inst2" && config$betterIfD == "D")
+        - (algorithm@name == "good for inst2" && config$betterIfD == "D"),
+    time = 0
   )
 }
 
-scenario <- irace::defaultScenario(list(maxExperiments = 100))
+scenario <- irace::defaultScenario(list(
+  maxExperiments = 42,
+  seed = 654687
+))
 
 test_that("problem and algorithm are passed to solver function", {
   test_once <- TRUE
@@ -48,7 +52,8 @@ test_that("problem and algorithm are passed to solver function", {
       }
       list(cost = 1)
     },
-    irace_scenario = scenario
+    irace_scenario = scenario,
+    quiet = T
   )
 })
 
@@ -57,7 +62,8 @@ test_that("parameters are tunned for each problem/algorithm combination", {
     problemSpace,
     algorithmSpace,
     solve_function,
-    irace_scenario = scenario
+    irace_scenario = scenario,
+    quiet = T
   )
   expect_equal(4, nrow(results))
   expect_equal(2, dplyr::n_distinct(results$problem_names))
@@ -72,4 +78,27 @@ test_that("parameters are tunned for each problem/algorithm combination", {
     filter(algorithm_names == "good for inst2") %>%
     pull(betterIfD)
   expect_true(all(betterDParams == "D"))
+})
+
+test_that("runs in parallel", {
+  oplan <- plan(multisession)
+  on.exit(plan(oplan), add = TRUE)
+  results_par <- build_performance_data(
+    problemSpace,
+    algorithmSpace,
+    solve_function,
+    irace_scenario = scenario,
+    parallel = 7,
+    quiet = T
+  )
+  plan(sequential)
+  results_seq <- build_performance_data(
+    problemSpace,
+    algorithmSpace,
+    solve_function,
+    irace_scenario = scenario,
+    parallel = 1,
+    quiet = T
+  )
+  expect_equal(results_par, results_seq)
 })

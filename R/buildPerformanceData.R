@@ -3,33 +3,38 @@
 
 wrap_irace_target_runner <- function(solve) {
   function (experiment, scenario) {
-    algorithm <- scenario$targetRunnerData$algorithm
-    problem <- scenario$targetRunnerData$problem
-    config = experiment$configuration
-    seed = experiment$seed
-    solve(algorithm, config, problem, seed)
+    solve(
+      algorithm = scenario$targetRunnerData$algorithm,
+      problem = scenario$targetRunnerData$problem,
+      config = experiment$configuration,
+      seed = experiment$seed
+    )
   }
 }
 
+solve_many <- function(exp_dt, solve) {
+  exp_dt %>%
+    pmap(solve)
+}
+
 wrap_irace_target_runner_parallel <- function(solve, ncores) {
-  function (experiments, scenario) {
+  function (experiments, scenario, ...) {
     algorithm <- scenario$targetRunnerData$algorithm
     problem <- scenario$targetRunnerData$problem
     expetiments_dt <- tibble(
-      algorithm = algorithm,
-      problem = problem,
-      configs = map_int(experiments, ~.x$seed),
-      seeds = map_int(experiments, ~.x$seed),
-      core = rep(1:ncores, length.out = length(experiments))
+      algorithm = list(algorithm),
+      problem = list(problem),
+      config = map(experiments, ~.x$configuration),
+      seed = map_int(experiments, ~.x$seed),
+      core = seq(experiments) %/% ((length(experiments) + 1) / ncores)
     )
     experiments_futures <- expetiments_dt %>%
       group_split(core) %>%
       map(function(exp_dt) {
-        futureCall(solve, args = list(experiments_dt = exp_dt))
+        futureCall(solve_many, args = list(exp_dt = exp_dt, solve = solve))
       })
-    experiments_futures %>%
-      map(value) %>%
-      unlist()
+    values <- experiments_futures %>% map(value)
+    return(values %>% unlist(recursive = F))
   }
 }
 
@@ -37,8 +42,9 @@ build_performance_data <- function(
     problem_space,
     algorithm_space,
     solve_function,
+    irace_scenario = irace::defaultScenario(),
     parallel = 1,
-    irace_scenario = irace::defaultScenario()) {
+    quiet = FALSE) {
   experiments <- expand.grid(problem = problem_space@problems, algorithm = algorithm_space@algorithms)
   results <- pmap_dfr(experiments, function(problem, algorithm) {
     inst_scenario <- irace_scenario
@@ -53,7 +59,11 @@ build_performance_data <- function(
       inst_scenario$targetRunnerParallel <- wrap_irace_target_runner_parallel(solve_function, parallel)
     }
     parameters <- algorithm@parameters
-    tunning_result <- irace::irace(inst_scenario, parameters)
+    if (quiet) {
+      tunning_result <- quietly(irace)(inst_scenario, parameters)$result
+    } else {
+      tunning_result <- irace(inst_scenario, parameters)
+    }
     tibble(
       algorithm_names = algorithm@name,
       algorithms = list(algorithm),

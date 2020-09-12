@@ -12,6 +12,7 @@ Depends:
     irace,
     dplyr,
     tidyr,
-    purrr
+    purrr,
+    future
 Suggests: 
     testthat
