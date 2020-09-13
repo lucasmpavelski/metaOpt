@@ -1,8 +1,5 @@
-
-
-
 wrap_irace_target_runner <- function(solve) {
-  function (experiment, scenario) {
+  function (experiment, scenario, ...) {
     solve(
       algorithm = scenario$targetRunnerData$algorithm,
       problem = scenario$targetRunnerData$problem,
@@ -12,29 +9,19 @@ wrap_irace_target_runner <- function(solve) {
   }
 }
 
-solve_many <- function(exp_dt, solve) {
-  exp_dt %>%
-    pmap(solve)
-}
-
 wrap_irace_target_runner_parallel <- function(solve, ncores) {
   function (experiments, scenario, ...) {
-    algorithm <- scenario$targetRunnerData$algorithm
-    problem <- scenario$targetRunnerData$problem
-    expetiments_dt <- tibble(
-      algorithm = list(algorithm),
-      problem = list(problem),
-      config = map(experiments, ~.x$configuration),
-      seed = map_int(experiments, ~.x$seed),
-      core = seq(experiments) %/% ((length(experiments) + 1) / ncores)
-    )
-    experiments_futures <- expetiments_dt %>%
+    wrap_solve <- wrap_irace_target_runner(solve)
+    ne <- length(experiments)
+    tibble(
+      experiment = experiments,
+      scenario = list(scenario),
+      core = seq(ne) %/% ((ne + 1) / ncores)
+    ) %>%
       group_split(core) %>%
-      map(function(exp_dt) {
-        futureCall(solve_many, args = list(exp_dt = exp_dt, solve = solve))
-      })
-    values <- experiments_futures %>% map(value)
-    return(values %>% unlist(recursive = F))
+      map(~future(pmap(.x, wrap_solve))) %>%
+      map(value) %>%
+      unlist(recursive = F)
   }
 }
 
@@ -44,7 +31,8 @@ build_performance_data <- function(
     solve_function,
     irace_scenario = irace::defaultScenario(),
     parallel = 1,
-    quiet = FALSE) {
+    quiet = FALSE,
+    cache_folder = NA) {
   experiments <- expand.grid(problem = problem_space@problems, algorithm = algorithm_space@algorithms)
   results <- pmap_dfr(experiments, function(problem, algorithm) {
     inst_scenario <- irace_scenario
@@ -59,11 +47,32 @@ build_performance_data <- function(
       inst_scenario$targetRunnerParallel <- wrap_irace_target_runner_parallel(solve_function, parallel)
     }
     parameters <- algorithm@parameters
-    if (quiet) {
-      tunning_result <- quietly(irace)(inst_scenario, parameters)$result
-    } else {
-      tunning_result <- irace(inst_scenario, parameters)
+
+    folder <- file.path(cache_folder, problem@name, algorithm@name)
+    if (!is.na(cache_folder)) {
+      dir.create(folder, showWarnings = FALSE, recursive = TRUE)
+      inst_scenario$logFile <- file.path(folder, 'log.Rdata')
+      result_file <- file.path(folder, 'result.rds')
     }
+
+    tunning_result <- NA
+    if (!is.na(cache_folder) && file.exists(result_file)) {
+      if (!quiet) {
+        cat('Reading cached ', result_file, '.')
+      }
+      tunning_result <- readRDS(result_file)
+    } else {
+      if (quiet) {
+        tunning_result <- quietly(irace)(inst_scenario, parameters)$result
+      } else {
+        tunning_result <- irace(inst_scenario, parameters)
+      }
+    }
+
+    if (!is.na(cache_folder)) {
+       saveRDS(tunning_result, result_file)
+    }
+
     tibble(
       algorithm_names = algorithm@name,
       algorithms = list(algorithm),
