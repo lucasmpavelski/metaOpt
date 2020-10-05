@@ -1,42 +1,15 @@
-wrap_irace_target_runner <- function(solve) {
-  function (experiment, scenario, ...) {
-    solve(
-      algorithm = scenario$targetRunnerData$algorithm,
-      problem = scenario$targetRunnerData$problem,
-      config = experiment$configuration,
-      seed = experiment$seed
-    )
-  }
-}
-
-wrap_irace_target_runner_parallel <- function(solve, ncores) {
-  function (experiments, scenario, ...) {
-    wrap_solve <- wrap_irace_target_runner(solve)
-    ne <- length(experiments)
-    tibble(
-      experiment = experiments,
-      scenario = list(scenario),
-      core = seq(ne) %/% ((ne + 1) / ncores)
-    ) %>%
-      group_split(core) %>%
-      map(~future(pmap(.x, wrap_solve))) %>%
-      map(value) %>%
-      unlist(recursive = F)
-  }
-}
-
 build_performance_data <- function(
-    problem_space,
-    algorithm_space,
-    solve_function,
-    irace_scenario = irace::defaultScenario(),
-    parallel = 1,
-    quiet = FALSE,
-    cache_folder = NA) {
+                                   problem_space,
+                                   algorithm_space,
+                                   solve_function,
+                                   irace_scenario = irace::defaultScenario(),
+                                   parallel = 1,
+                                   quiet = FALSE,
+                                   cache_folder = NA) {
   experiments <- expand.grid(problem = problem_space@problems, algorithm = algorithm_space@algorithms)
   results <- pmap_dfr(experiments, function(problem, algorithm) {
     inst_scenario <- irace_scenario
-    inst_scenario$instances <- problem@name
+    inst_scenario$instances <- problem@instances
     inst_scenario$targetRunnerData <- list(
       problem = problem,
       algorithm = algorithm
@@ -51,14 +24,16 @@ build_performance_data <- function(
     folder <- file.path(cache_folder, problem@name, algorithm@name)
     if (!is.na(cache_folder)) {
       dir.create(folder, showWarnings = FALSE, recursive = TRUE)
-      inst_scenario$logFile <- file.path(folder, 'log.Rdata')
-      result_file <- file.path(folder, 'result.rds')
+      inst_scenario$logFile <- file.path(folder, "log.Rdata")
+      result_file <- file.path(folder, "result.rds")
+    } else {
+      inst_scenario$logFile <- "/dev/null"
     }
 
     tunning_result <- NA
     if (!is.na(cache_folder) && file.exists(result_file)) {
       if (!quiet) {
-        cat('Reading cached ', result_file, '.')
+        cat("Reading cached ", result_file, ".")
       }
       tunning_result <- readRDS(result_file)
     } else {
@@ -70,7 +45,7 @@ build_performance_data <- function(
     }
 
     if (!is.na(cache_folder)) {
-       saveRDS(tunning_result, result_file)
+      saveRDS(tunning_result, result_file)
     }
 
     tibble(

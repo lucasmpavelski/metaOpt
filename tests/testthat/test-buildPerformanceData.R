@@ -15,21 +15,23 @@ algorithmSpace <- AlgorithmSpace(
 problemSpace <- ProblemSpace(
   problems = list(
     Problem(
-      name = "inst1"
+      name = "inst1",
+      instances = list('inst1')
     ),
     Problem(
-      name = "inst2"
+      name = "inst2",
+      instances = list('inst2')
     )
   )
 )
 
-solve_function <- function(algorithm, config, problem, seed, ...) {
-  list (
+solve_function <- function(algorithm, config, instance, problem, seed, ...) {
+  list(
     cost = 4
-        - (algorithm@name == "good for inst1" && problem@name == "inst1")
-        - (algorithm@name == "good for inst2" && problem@name == "inst2")
-        - (algorithm@name == "good for inst1" && config$betterIfA == "A")
-        - (algorithm@name == "good for inst2" && config$betterIfD == "D"),
+    - (algorithm@name == "good for inst1" && problem@name == "inst1")
+      - (algorithm@name == "good for inst2" && problem@name == "inst2")
+      - (algorithm@name == "good for inst1" && config$betterIfA == "A")
+      - (algorithm@name == "good for inst2" && config$betterIfD == "D"),
     time = 0
   )
 }
@@ -44,10 +46,11 @@ test_that("problem and algorithm are passed to solver function", {
   results <- build_performance_data(
     problemSpace,
     algorithmSpace,
-    function(algorithm, config, problem, seed) {
+    function(algorithm, config, problem, instance, seed, ...) {
       if (test_once) {
-        expect_true(some(algorithmSpace@algorithms, ~.x@name == algorithm@name))
-        expect_true(some(problemSpace@problems, ~.x@name == problem@name))
+        expect_true(some(algorithmSpace@algorithms, ~ .x@name == algorithm@name))
+        expect_true(some(problemSpace@problems, ~ .x@name == problem@name))
+        expect_true(any(problem@instances == instance))
         test_once <<- FALSE
       }
       list(cost = 1)
@@ -88,7 +91,7 @@ test_that("runs in parallel", {
     algorithmSpace,
     solve_function,
     irace_scenario = scenario,
-    parallel = 7,
+    parallel = 2,
     quiet = T
   )
   plan(sequential)
