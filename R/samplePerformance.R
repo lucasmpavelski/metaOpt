@@ -10,7 +10,6 @@ sample_performance <- function(
     return(readRDS(cache))
   }
   seeds <- as.integer(runif(no_samples, 1, .Machine$integer.max))
-  browser()
   experiments <- tibble(
       problem = problemSpace@problems,
       instance = map(problem, ~unlist(.x@instances)),
