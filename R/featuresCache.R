@@ -14,9 +14,9 @@ save_problem_features <- function(problem, features, features_folder = here('dat
   saveRDS(features, file = path)
 }
 
-append_problem_features <- function(problem, new_features) {
+append_problem_features <- function(problem, new_features, features_folder = here('data', 'features')) {
   features <- load_problem_features(problem)
-  features[,names(new_features)] <- new_features
+  features[,names(new_features)] <- new_features[,names(new_features)]
   save_problem_features(problem, features)
   features
 }
