@@ -3,7 +3,7 @@ wrap_irace_target_runner <- function(solve) {
     problem <- scenario$targetRunnerData$problem
     instance <- experiment$instance
     if (length(problem) > 1) {
-        problem <- Filter(function(p) any(p@instances == instance), scenario$targetRunnerData$problem)[[1]]
+      problem <- Filter(function(p) any(p@instances == instance), scenario$targetRunnerData$problem)[[1]]
     }
     solve(
       algorithm = scenario$targetRunnerData$algorithm,

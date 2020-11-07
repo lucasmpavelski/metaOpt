@@ -5,7 +5,7 @@ build_performance_data <- function(
                                    irace_scenario = irace::defaultScenario(),
                                    parallel = 1,
                                    quiet = FALSE,
-                                   cache_folder = here('data', 'performance')) {
+                                   cache_folder = here("data", "performance")) {
   experiments <- expand.grid(problem = problem_space@problems, algorithm = algorithm_space@algorithms)
   results <- pmap_dfr(experiments, function(problem, algorithm) {
     inst_scenario <- irace_scenario

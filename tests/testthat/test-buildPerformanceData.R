@@ -16,11 +16,11 @@ problemSpace <- ProblemSpace(
   problems = list(
     Problem(
       name = "inst1",
-      instances = list('inst1')
+      instances = list("inst1")
     ),
     Problem(
       name = "inst2",
-      instances = list('inst2')
+      instances = list("inst2")
     )
   )
 )
