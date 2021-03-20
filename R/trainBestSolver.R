@@ -5,7 +5,8 @@ train_best_solver <- function(
                               irace_scenario = irace::defaultScenario(),
                               parallel = 1,
                               quiet = FALSE,
-                              cache = NA) {
+                              cache = NA,
+                              recover = FALSE) {
   inst_scenario <- irace_scenario
   inst_scenario$instances <- unlist(map(problem_space@problems, ~ .x@instances))
   inst_scenario$targetRunnerData <- list(
@@ -18,6 +19,11 @@ train_best_solver <- function(
     inst_scenario$targetRunnerParallel <- wrap_irace_target_runner_parallel(solve_function, parallel)
   }
   parameters <- algorithm@parameters
+
+  if (recover && file.exists(cache)) {
+    inst_scenario$recoveryFile <- paste0(cache, "_rec.Rdata")
+    file.copy(cache, inst_scenario$recoveryFile, overwrite = T)
+  }
 
   result_file <- NULL
   if (!is.na(cache)) {

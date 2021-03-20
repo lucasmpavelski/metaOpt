@@ -6,6 +6,7 @@ sample_performance <- function(
                                no_samples = 30,
                                parallel = 1,
                                cache = NA) {
+  stopifnot(no_samples >= 1)
   if (!is.na(cache) && file.exists(cache)) {
     return(readRDS(cache))
   }
@@ -15,7 +16,8 @@ sample_performance <- function(
     instance = map(problem, ~ unlist(.x@instances)),
     seed = list(seeds)
   ) %>%
-    unnest(c(instance, seed))
+    unnest(instance) %>%
+    unnest(seed)
   n_exper <- nrow(experiments)
   result <- experiments %>%
     mutate(core = seq(n_exper) %/% ((n_exper + 1) / parallel)) %>%
@@ -32,12 +34,13 @@ sample_performance <- function(
           )
           tibble(
             problem = list(problem),
+            instance = instance,
             seed = seed,
             result = list(result)
           )
         })
     }, args = list(experiments = .x))) %>%
-    map(values) %>%
+    map(value) %>%
     unlist(recursive = F) %>%
     bind_rows()
   if (!is.na(cache)) {
