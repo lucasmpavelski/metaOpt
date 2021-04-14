@@ -37,7 +37,23 @@ test_that("parameters are tunned", {
     algorithm,
     solve_function,
     irace_scenario = scenario,
-    quiet = F
+    quiet = T
+  )
+  betterAParams <- results %>%
+    pull(betterIfA)
+  expect_true(all(betterAParams == "A"))
+})
+
+test_that("parameters are tunned in parallel", {
+  plan(multisession)
+  on.exit(plan(sequential))
+  results <- train_best_solver(
+    problemSpace,
+    algorithm,
+    solve_function,
+    irace_scenario = scenario,
+    quiet = T,
+    parallel = 2
   )
   betterAParams <- results %>%
     pull(betterIfA)

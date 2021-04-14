@@ -32,8 +32,7 @@ test_that("sample performance works", {
     list(betterIfA = "A"),
     problemSpace,
     solve_function,
-    10,
-    parallel = 1
+    10
   )
   expect_equal(20, nrow(results))
   expect_setequal(2, results %>%
