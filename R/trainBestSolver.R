@@ -20,9 +20,9 @@ train_best_solver <- function(
   }
   parameters <- algorithm@parameters
 
-  if (recover && file.exists(cache)) {
+  if (recover && file.exists(paste0(cache, "_log.Rdata"))) {
     inst_scenario$recoveryFile <- paste0(cache, "_rec.Rdata")
-    file.copy(cache, inst_scenario$recoveryFile, overwrite = T)
+    file.copy(paste0(cache, "_log.Rdata"), inst_scenario$recoveryFile, overwrite = T)
   }
 
   result_file <- NULL
