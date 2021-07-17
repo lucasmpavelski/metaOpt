@@ -18,9 +18,7 @@ wrap_irace_target_runner <- function(solve) {
 wrap_irace_target_runner_parallel <- function(solve, ncores) {
   wrap_solve <- wrap_irace_target_runner(solve)
   function(experiments, scenario, ...) {
-    ne <- length(experiments)
     tibble(experiment = experiments, scenario = list(scenario)) %>%
-      furrr::future_pmap(wrap_solve) %>%
-      map(future::value)
+      furrr::future_pmap(wrap_solve)
   }
 }
