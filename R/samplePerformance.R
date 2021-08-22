@@ -13,7 +13,7 @@ sample_performance <- function(
   seeds <- as.integer(runif(no_samples, 1, .Machine$integer.max))
   experiments <- tibble(
     problem = problemSpace@problems,
-    instance = map(problem, ~ unlist(.x@instances)),
+    instance = map(problem, ~ unlist(.x@instances, recursive = F)),
     seed = list(seeds)
   ) %>%
     unnest(instance) %>%

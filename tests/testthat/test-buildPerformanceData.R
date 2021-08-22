@@ -38,7 +38,8 @@ solve_function <- function(algorithm, config, instance, problem, seed, ...) {
 
 scenario <- irace::defaultScenario(list(
   maxExperiments = 42,
-  seed = 654687
+  seed = 654687,
+  logFile = tempfile()
 ))
 
 test_that("problem and algorithm are passed to solver function", {
@@ -56,7 +57,8 @@ test_that("problem and algorithm are passed to solver function", {
       list(cost = 1)
     },
     irace_scenario = scenario,
-    quiet = T
+    quiet = T,
+    cache_folder = NA
   )
 })
 
@@ -66,7 +68,8 @@ test_that("parameters are tunned for each problem/algorithm combination", {
     algorithmSpace,
     solve_function,
     irace_scenario = scenario,
-    quiet = T
+    quiet = T,
+    cache_folder = NA
   )
   expect_equal(4, nrow(results))
   expect_equal(2, dplyr::n_distinct(results$problem_names))
@@ -92,7 +95,8 @@ test_that("runs in parallel", {
     solve_function,
     irace_scenario = scenario,
     parallel = 2,
-    quiet = T
+    quiet = T,
+    cache_folder = NA
   )
   plan(sequential)
   results_seq <- build_performance_data(
@@ -101,7 +105,8 @@ test_that("runs in parallel", {
     solve_function,
     irace_scenario = scenario,
     parallel = 1,
-    quiet = T
+    quiet = T,
+    cache_folder = NA
   )
   expect_equal(results_par, results_seq)
 })
